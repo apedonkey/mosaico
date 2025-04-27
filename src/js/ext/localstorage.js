@@ -39,6 +39,26 @@ var lsCommandPluginFactory = function(md, emailProcessorBackend) {
       global.localStorage.setItem("metadata-" + mdkey, viewModel.exportMetadata());
       global.localStorage.setItem("template-" + mdkey, viewModel.exportJSON());
       saveCmd.enabled(true);
+
+      try {
+        var htmlContent = viewModel.exportHTML ? viewModel.exportHTML() : ''; // Get HTML
+        var jsonContent = viewModel.exportJSON ? JSON.parse(viewModel.exportJSON()) : null; // Get JSON
+        console.log('[Mosaico Internal Save] >>> Preparing to post mosaico-save message back to parent. HTML length:', htmlContent?.length);
+        
+        // Use window.parent to be safe
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage(JSON.stringify({ 
+              type: 'mosaico-save', 
+              html: htmlContent, 
+              json: jsonContent 
+          }), '*'); // TODO: Use specific target origin in production instead of '*'
+          console.log('[Mosaico Internal Save] <<< Posted mosaico-save message.');
+        } else {
+           console.warn('[Mosaico Internal Save] Could not access window.parent to post message.');
+        }
+      } catch (e) {
+        console.error('[Mosaico Internal Save] Error preparing or sending postMessage:', e);
+      }
     };
     var testCmd = {
       name: 'Test', // l10n happens in the template
