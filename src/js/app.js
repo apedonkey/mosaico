@@ -152,6 +152,52 @@ var start = function(options, templateFile, templateMetadata, jsorjson, customEx
 
   templateLoader.load(functionCaller, templateFile, templateMetadata, jsorjson, extensions, galleryUrl);
 
+  // ---> ADD LISTENER FOR POST-LOAD CONFIGURATION <---
+  var handleConfigurationMessage = function(event) {
+    // TODO: Check event.origin for security
+    try {
+      let data = event.data;
+      if (typeof event.data === 'string' && event.data.startsWith('{')) { 
+        data = JSON.parse(event.data);
+      } else if (typeof event.data !== 'object') {
+        return; // Ignore non-object/non-JSON messages
+      }
+
+      if (data && data.type === 'mosaico-configure' && data.options) {
+        console.log('[Mosaico app.js] Received mosaico-configure message:', data.options);
+        
+        // Re-apply fileuploadConfig if provided
+        if (data.options.fileuploadConfig) {
+          var currentFileuploadConfig = ko.bindingHandlers['fileupload'].extendOptions || {};
+          var receivedFileuploadConfig = data.options.fileuploadConfig;
+          // Ensure URL is updated specifically, merge others if needed
+          currentFileuploadConfig.url = receivedFileuploadConfig.url; 
+          // You could merge other options here too if necessary:
+          // currentFileuploadConfig = $.extend(true, currentFileuploadConfig, receivedFileuploadConfig);
+          
+          ko.bindingHandlers['fileupload'].extendOptions = currentFileuploadConfig;
+          console.log('[Mosaico app.js] Applied fileuploadConfig from message:', ko.bindingHandlers['fileupload'].extendOptions);
+        }
+        
+        // Apply other options if needed (e.g., tinymceConfig)
+        // applyBindingOptions(data.options, ko); // Re-applying all might have side effects
+
+        // Potentially remove listener after first config?
+        // window.removeEventListener('message', handleConfigurationMessage);
+      }
+    } catch (e) {
+      console.error('[Mosaico app.js] Error processing configuration message:', e, 'Raw data:', event.data);
+    }
+  };
+
+  if (global.window) { // Check if window exists
+    global.window.addEventListener('message', handleConfigurationMessage);
+    console.log('[Mosaico app.js] Added listener for mosaico-configure messages.');
+  } else {
+    console.error('[Mosaico app.js] global.window not found, cannot add message listener.');
+  }
+  // ---> END LISTENER <---
+
 };
 
 var initFromLocalStorage = function(options, hash_key, customExtensions) {
