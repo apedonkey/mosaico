@@ -43,18 +43,18 @@ var lsCommandPluginFactory = function(md, emailProcessorBackend) {
       try {
         var htmlContent = viewModel.exportHTML ? viewModel.exportHTML() : ''; // Get HTML
         var jsonContent = viewModel.exportJSON ? JSON.parse(viewModel.exportJSON()) : null; // Get JSON
-        console.log('[Mosaico Internal Save] >>> Preparing to post mosaico-save message back to parent. HTML length:', htmlContent?.length);
+        console.log('[Mosaico Internal Save] >>> Preparing to post mosaico-save message back to parent. HTML length:', (htmlContent ? htmlContent.length : 0));
         
-        // Use window.parent to be safe
-        if (window.parent && window.parent !== window) {
-          window.parent.postMessage(JSON.stringify({ 
+        // Use global.parent to be safe
+        if (global.parent && global.parent !== global.window) {
+          global.parent.postMessage(JSON.stringify({ 
               type: 'mosaico-save', 
               html: htmlContent, 
               json: jsonContent 
           }), '*'); // TODO: Use specific target origin in production instead of '*'
           console.log('[Mosaico Internal Save] <<< Posted mosaico-save message.');
         } else {
-           console.warn('[Mosaico Internal Save] Could not access window.parent to post message.');
+           console.warn('[Mosaico Internal Save] Could not access global.parent to post message.');
         }
       } catch (e) {
         console.error('[Mosaico Internal Save] Error preparing or sending postMessage:', e);
